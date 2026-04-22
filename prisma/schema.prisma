@@ -1,0 +1,42 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model StaffRegistry {
+  id             Int      @id @default(autoincrement())
+  attendant_id   String   @unique
+  attendant_name String
+  shift          String
+  role           String
+  start_date     DateTime @db.Date
+  status         String   @default("Active")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  weekly_sales WeeklySales[]
+
+  @@map("staff_registry")
+}
+
+model WeeklySales {
+  id                Int      @id @default(autoincrement())
+  week_start        DateTime @db.Date
+  week_end          DateTime @db.Date
+  shift             String
+  attendant_id      String
+  fuel_sales_litres Float    @default(0)
+  lub_qty           Float    @default(0)
+  notes             String   @default("")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  staff StaffRegistry? @relation(fields: [attendant_id], references: [attendant_id])
+
+  @@unique([week_start, attendant_id])
+  @@map("weekly_sales")
+}

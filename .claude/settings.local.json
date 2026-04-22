@@ -7,7 +7,10 @@
       "Bash(cp -r app \"C:/Users/Hp/Bundaturnoff-/\")",
       "Bash(cp package.json package-lock.json tsconfig.json next.config.ts postcss.config.mjs eslint.config.mjs next-env.d.ts README.md \"C:/Users/Hp/Bundaturnoff-/\")",
       "Bash(npm install:*)",
-      "Bash(npx shadcn@latest init --defaults -y)"
+      "Bash(npx shadcn@latest init --defaults -y)",
+      "Bash(npx shadcn@latest add card input label table tabs badge dialog select separator skeleton --yes)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
