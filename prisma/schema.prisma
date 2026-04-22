@@ -40,3 +40,21 @@ model WeeklySales {
   @@unique([week_start, attendant_id])
   @@map("weekly_sales")
 }
+
+model POSTransaction {
+  id             Int      @id @default(autoincrement())
+  card_number    String
+  card_last4     String
+  amount         Int
+  datetime_local DateTime
+  datetime_gmt   DateTime
+  terminal_id    String
+  switch_key     String   @unique
+  account_no     String?
+  sheet_month    String
+  created_at     DateTime @default(now())
+
+  @@index([card_last4])
+  @@index([card_number])
+  @@map("pos_transactions")
+}

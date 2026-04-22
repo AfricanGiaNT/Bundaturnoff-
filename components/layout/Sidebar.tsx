@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Fuel, LayoutDashboard, CalendarDays, Users, TrendingUp, FileText, LogOut, Menu, X } from 'lucide-react'
+import { Fuel, LayoutDashboard, CalendarDays, Users, TrendingUp, FileText, LogOut, Menu, X, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/staff', label: 'Staff', icon: Users },
   { href: '/trends', label: 'Trends', icon: TrendingUp },
   { href: '/reports', label: 'Reports', icon: FileText },
+  { href: '/pos', label: 'POS Transactions', icon: CreditCard },
 ]
 
 export function Sidebar() {

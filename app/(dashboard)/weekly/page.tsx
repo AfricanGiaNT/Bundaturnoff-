@@ -40,6 +40,7 @@ export default function WeeklyPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
   // Load staff and weeks list
   useEffect(() => {
@@ -47,8 +48,11 @@ export default function WeeklyPage() {
       fetch('/api/excel/staff').then((r) => r.json()),
       fetch('/api/excel/weekly', { method: 'PUT' }).then((r) => r.json()),
     ]).then(([staffData, weeksData]) => {
-      setStaff(staffData)
-      setWeeks(weeksData)
+      setStaff(Array.isArray(staffData) ? staffData : [])
+      setWeeks(Array.isArray(weeksData) ? weeksData : [])
+      setLoading(false)
+    }).catch(() => {
+      setError('Failed to load data. Check your database connection.')
       setLoading(false)
     })
   }, [])
@@ -56,27 +60,35 @@ export default function WeeklyPage() {
   const loadWeek = useCallback(async (weekStart: string) => {
     setLoading(true)
     setSelectedWeek(weekStart)
-    const existing: WeeklyRow[] = await fetch(`/api/excel/weekly?week_start=${weekStart}`).then((r) => r.json())
-    const weekEnd = toWeekEnd(weekStart)
+    setError('')
+    try {
+      const res = await fetch(`/api/excel/weekly?week_start=${weekStart}`)
+      const data = await res.json()
+      const existing: WeeklyRow[] = Array.isArray(data) ? data : []
+      const weekEnd = toWeekEnd(weekStart)
 
-    // Build rows: one per active staff, pre-fill from existing
-    const activeStaff = staff.filter((s) => s.status === 'Active')
-    const editRows: EditRow[] = activeStaff.map((s) => {
-      const found = existing.find((r) => r.attendant_id === s.attendant_id)
-      return {
-        week_start: weekStart,
-        week_end: weekEnd,
-        attendant_id: s.attendant_id,
-        attendant_name: s.attendant_name,
-        shift: s.shift,
-        role: s.role,
-        fuel_sales_litres: found?.fuel_sales_litres ?? 0,
-        lub_qty: found?.lub_qty ?? 0,
-        notes: found?.notes ?? '',
-      }
-    })
-    setRows(editRows)
-    setLoading(false)
+      // Build rows: one per active staff, pre-fill from existing
+      const activeStaff = staff.filter((s) => s.status === 'Active')
+      const editRows: EditRow[] = activeStaff.map((s) => {
+        const found = existing.find((r) => r.attendant_id === s.attendant_id)
+        return {
+          week_start: weekStart,
+          week_end: weekEnd,
+          attendant_id: s.attendant_id,
+          attendant_name: s.attendant_name,
+          shift: s.shift,
+          role: s.role,
+          fuel_sales_litres: found?.fuel_sales_litres ?? 0,
+          lub_qty: found?.lub_qty ?? 0,
+          notes: found?.notes ?? '',
+        }
+      })
+      setRows(editRows)
+    } catch {
+      setError('Failed to load week data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }, [staff])
 
   function handleNewWeek() {
@@ -110,41 +122,66 @@ export default function WeeklyPage() {
     if (!selectedWeek) return
     setSaving(true)
     setMessage('')
-    const weekEnd = toWeekEnd(selectedWeek)
-    const payload: WeeklyRow[] = rows.map((r) => ({
-      week_start: selectedWeek,
-      week_end: weekEnd,
-      shift: r.shift,
-      attendant_id: r.attendant_id,
-      attendant_name: r.attendant_name,
-      role: r.role,
-      fuel_sales_litres: Number(r.fuel_sales_litres) || 0,
-      lub_qty: Number(r.lub_qty) || 0,
-      notes: r.notes || '',
-    }))
-    const res = await fetch('/api/excel/weekly', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ week_start: selectedWeek, rows: payload }),
-    })
-    setSaving(false)
-    if (res.ok) {
-      setMessage('Week saved successfully!')
-      // Refresh weeks list
-      const weeksData = await fetch('/api/excel/weekly', { method: 'PUT' }).then((r) => r.json())
-      setWeeks(weeksData)
-    } else {
-      setMessage('Error saving. Please try again.')
+    setError('')
+    try {
+      const weekEnd = toWeekEnd(selectedWeek)
+      const payload: WeeklyRow[] = rows.map((r) => ({
+        week_start: selectedWeek,
+        week_end: weekEnd,
+        shift: r.shift,
+        attendant_id: r.attendant_id,
+        attendant_name: r.attendant_name,
+        role: r.role,
+        fuel_sales_litres: Number(r.fuel_sales_litres) || 0,
+        lub_qty: Number(r.lub_qty) || 0,
+        notes: r.notes || '',
+      }))
+      const res = await fetch('/api/excel/weekly', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ week_start: selectedWeek, rows: payload }),
+      })
+      if (res.ok) {
+        setMessage('Week saved successfully!')
+        const weeksData = await fetch('/api/excel/weekly', { method: 'PUT' }).then((r) => r.json())
+        setWeeks(Array.isArray(weeksData) ? weeksData : [])
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setError(body?.error ?? 'Error saving. Please try again.')
+      }
+    } catch {
+      setError('Save failed. Check your connection and try again.')
+    } finally {
+      setSaving(false)
+      setTimeout(() => setMessage(''), 4000)
     }
-    setTimeout(() => setMessage(''), 4000)
   }
 
-  const shiftColors: Record<string, string> = { A: 'default', B: 'secondary', C: 'outline' }
+  const shiftBadgeClass: Record<string, string> = {
+    A: 'bg-blue-600 text-white border-transparent',
+    B: 'bg-emerald-600 text-white border-transparent',
+    C: 'bg-violet-600 text-white border-transparent',
+  }
+  const shiftGroupClass: Record<string, string> = {
+    A: 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-l-2 border-blue-400',
+    B: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-l-2 border-emerald-400',
+    C: 'bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border-l-2 border-violet-400',
+  }
+  const shiftIdClass: Record<string, string> = {
+    A: 'text-blue-600 dark:text-blue-400',
+    B: 'text-emerald-600 dark:text-emerald-400',
+    C: 'text-violet-600 dark:text-violet-400',
+  }
 
   return (
     <div>
       <Header title="Weekly Entry" />
       <div className="p-6 space-y-6">
+        {error && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Past weeks list */}
           <Card className="lg:w-64 shrink-0">
@@ -224,68 +261,96 @@ export default function WeeklyPage() {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>ID</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Shift</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead className="text-right">Fuel Sales (L)</TableHead>
-                            <TableHead className="text-right">Lub Qty</TableHead>
-                            <TableHead>Notes</TableHead>
-                            <TableHead className="w-10"></TableHead>
+                          <TableRow className="bg-muted/40 hover:bg-muted/40">
+                            <TableHead className="w-16 font-semibold text-foreground text-sm">ID</TableHead>
+                            <TableHead className="min-w-[160px] font-semibold text-foreground text-sm">Name</TableHead>
+                            <TableHead className="w-16 font-semibold text-foreground text-sm">Shift</TableHead>
+                            <TableHead className="w-28 font-semibold text-foreground text-sm">Role</TableHead>
+                            <TableHead className="w-36 font-semibold text-foreground text-sm">Fuel Sales (L)</TableHead>
+                            <TableHead className="w-28 font-semibold text-foreground text-sm">Lub Qty</TableHead>
+                            <TableHead className="font-semibold text-foreground text-sm">Notes</TableHead>
+                            <TableHead className="w-10" />
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {rows.map((row, idx) => (
-                            <TableRow key={row.attendant_id}>
-                              <TableCell className="text-muted-foreground text-xs">{row.attendant_id}</TableCell>
-                              <TableCell className="font-medium text-sm">{row.attendant_name}</TableCell>
-                              <TableCell>
-                                <Badge variant={shiftColors[row.shift] as 'default' | 'secondary' | 'outline' | 'destructive'}>
-                                  {row.shift}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{row.role}</TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  value={row.fuel_sales_litres}
-                                  onChange={(e) => updateRow(idx, 'fuel_sales_litres', parseFloat(e.target.value) || 0)}
-                                  className="w-28 text-right"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step={0.5}
-                                  value={row.lub_qty}
-                                  onChange={(e) => updateRow(idx, 'lub_qty', parseFloat(e.target.value) || 0)}
-                                  className="w-20 text-right"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={row.notes}
-                                  onChange={(e) => updateRow(idx, 'notes', e.target.value)}
-                                  placeholder="Notes"
-                                  className="w-28"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => deleteRow(idx)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                          {rows.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
+                                No active staff found. Add staff members on the Staff page first.
                               </TableCell>
                             </TableRow>
-                          ))}
+                          )}
+                          {(['A', 'B', 'C'] as const).flatMap((shift) => {
+                            const shiftRows = rows.filter((r) => r.shift === shift)
+                            if (shiftRows.length === 0) return []
+                            return [
+                              <TableRow key={`group-${shift}`} className={`hover:opacity-100 ${shiftGroupClass[shift]}`}>
+                                <TableCell colSpan={8} className="py-1.5 px-4">
+                                  <span className="text-xs font-bold uppercase tracking-widest">Shift {shift}</span>
+                                </TableCell>
+                              </TableRow>,
+                              ...shiftRows.map((row) => {
+                                const idx = rows.indexOf(row)
+                                return (
+                                  <TableRow
+                                    key={row.attendant_id}
+                                    className="group hover:bg-muted/50 transition-colors"
+                                  >
+                                    <TableCell className={`font-mono font-semibold text-sm ${shiftIdClass[row.shift]}`}>
+                                      {row.attendant_id}
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className="font-semibold text-base leading-tight">{row.attendant_name}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge className={`text-sm font-bold px-2.5 py-0.5 ${shiftBadgeClass[row.shift]}`}>
+                                        {row.shift}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">{row.role}</TableCell>
+                                    <TableCell>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step={0.01}
+                                        value={row.fuel_sales_litres}
+                                        onChange={(e) => updateRow(idx, 'fuel_sales_litres', parseFloat(e.target.value) || 0)}
+                                        className="w-full text-right font-medium"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step={0.5}
+                                        value={row.lub_qty}
+                                        onChange={(e) => updateRow(idx, 'lub_qty', parseFloat(e.target.value) || 0)}
+                                        className="w-full text-right font-medium"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Input
+                                        value={row.notes}
+                                        onChange={(e) => updateRow(idx, 'notes', e.target.value)}
+                                        placeholder="Add a note…"
+                                        className="w-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                                        onClick={() => deleteRow(idx)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              }),
+                            ]
+                          })}
                         </TableBody>
                       </Table>
                     </div>

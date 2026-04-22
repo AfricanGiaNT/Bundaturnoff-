@@ -10,7 +10,10 @@
       "Bash(npx shadcn@latest init --defaults -y)",
       "Bash(npx shadcn@latest add card input label table tabs badge dialog select separator skeleton --yes)",
       "Bash(npx tsc:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(xargs grep *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(npx prisma *)"
     ]
   }
 }

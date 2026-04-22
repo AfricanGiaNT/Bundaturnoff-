@@ -72,6 +72,38 @@ export interface WeeklySummaryRow {
   wow_pct: number
 }
 
+export interface POSStats {
+  total_count: number
+  total_amount: number
+  unique_cards: number
+  date_from: string | null
+  date_to: string | null
+  months: string[]
+  month_counts: Record<string, number>
+}
+
+export interface POSTransaction {
+  id: number
+  card_number: string
+  card_last4: string
+  amount: number
+  datetime_local: string
+  datetime_gmt: string
+  terminal_id: string
+  switch_key: string
+  account_no: string | null
+  sheet_month: string
+}
+
+export interface POSCustomerSummary {
+  card_number: string
+  card_last4: string
+  transaction_count: number
+  total_amount: number
+  first_seen: string
+  last_seen: string
+}
+
 export interface MonthlySummaryRow {
   month: string
   year: number
