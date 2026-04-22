@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     })
 
     return NextResponse.json(
-      rows.map((r) => ({
+      rows.map((r: typeof rows[number]) => ({
         week_start: toDateStr(r.week_start),
         week_end: toDateStr(r.week_end),
         shift: r.shift,

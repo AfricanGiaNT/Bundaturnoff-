@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { prisma, type DbStaffRow } from '@/lib/db'
 import { syncToExcel } from '@/lib/sync'
 
 function toDateStr(d: Date): string {
@@ -12,7 +12,7 @@ export async function GET() {
       orderBy: [{ shift: 'asc' }, { attendant_id: 'asc' }],
     })
     return NextResponse.json(
-      staff.map((s) => ({
+      staff.map((s: DbStaffRow) => ({
         attendant_id: s.attendant_id,
         attendant_name: s.attendant_name,
         shift: s.shift,
