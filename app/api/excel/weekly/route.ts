@@ -111,7 +111,7 @@ export async function PUT() {
       orderBy: { week_start: 'desc' },
     })
     return NextResponse.json(
-      weeks.map((w) => ({
+      weeks.map((w: typeof weeks[number]) => ({
         week_start: toDateStr(w.week_start),
         week_end: toDateStr(w.week_end),
       }))
