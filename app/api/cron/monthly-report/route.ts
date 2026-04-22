@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import { prisma } from '@/lib/db'
+import { prisma, type DbStaffRow, type DbSalesRow } from '@/lib/db'
 import { computeMonthlySummary, computeIndividual, computeShiftSummary } from '@/lib/compute'
 import { WeeklyRow, StaffMember } from '@/lib/types'
 import * as XLSX from 'xlsx'
@@ -30,12 +30,12 @@ export async function GET(req: NextRequest) {
       prisma.weeklySales.findMany({ orderBy: { week_start: 'asc' } }),
     ])
 
-    const staff: StaffMember[] = staffRows.map((s) => ({
+    const staff: StaffMember[] = staffRows.map((s: DbStaffRow) => ({
       attendant_id: s.attendant_id, attendant_name: s.attendant_name,
       shift: s.shift, role: s.role, start_date: toDateStr(s.start_date), status: s.status,
     }))
 
-    const allRows: WeeklyRow[] = salesRows.map((r) => ({
+    const allRows: WeeklyRow[] = salesRows.map((r: DbSalesRow) => ({
       week_start: toDateStr(r.week_start), week_end: toDateStr(r.week_end),
       shift: r.shift, attendant_id: r.attendant_id,
       attendant_name: staffRows.find((s) => s.attendant_id === r.attendant_id)?.attendant_name ?? '',

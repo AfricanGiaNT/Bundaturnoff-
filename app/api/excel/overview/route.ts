@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { prisma, type DbStaffRow, type DbSalesRow } from '@/lib/db'
 import { computeOverview } from '@/lib/compute'
 import { StaffMember, WeeklyRow } from '@/lib/types'
 
@@ -14,7 +14,7 @@ export async function GET() {
       prisma.weeklySales.findMany({ orderBy: { week_start: 'asc' } }),
     ])
 
-    const staff: StaffMember[] = staffRows.map((s) => ({
+    const staff: StaffMember[] = staffRows.map((s: DbStaffRow) => ({
       attendant_id: s.attendant_id,
       attendant_name: s.attendant_name,
       shift: s.shift,
@@ -23,7 +23,7 @@ export async function GET() {
       status: s.status,
     }))
 
-    const rows: WeeklyRow[] = salesRows.map((r) => ({
+    const rows: WeeklyRow[] = salesRows.map((r: DbSalesRow) => ({
       week_start: toDateStr(r.week_start),
       week_end: toDateStr(r.week_end),
       shift: r.shift,
