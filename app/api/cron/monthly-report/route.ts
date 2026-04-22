@@ -38,8 +38,8 @@ export async function GET(req: NextRequest) {
     const allRows: WeeklyRow[] = salesRows.map((r: DbSalesRow) => ({
       week_start: toDateStr(r.week_start), week_end: toDateStr(r.week_end),
       shift: r.shift, attendant_id: r.attendant_id,
-      attendant_name: staffRows.find((s) => s.attendant_id === r.attendant_id)?.attendant_name ?? '',
-      role: staffRows.find((s) => s.attendant_id === r.attendant_id)?.role ?? '',
+      attendant_name: staffRows.find((s: DbStaffRow) => s.attendant_id === r.attendant_id)?.attendant_name ?? '',
+      role: staffRows.find((s: DbStaffRow) => s.attendant_id === r.attendant_id)?.role ?? '',
       fuel_sales_litres: r.fuel_sales_litres, lub_qty: r.lub_qty, notes: r.notes,
     }))
 
