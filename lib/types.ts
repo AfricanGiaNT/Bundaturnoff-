@@ -115,3 +115,20 @@ export interface MonthlySummaryRow {
   mom_change: number
   mom_pct: number
 }
+
+export interface DashboardAlert {
+  type: string
+  severity: 'red' | 'amber'
+  count: number
+  label: string
+  action_href?: string
+}
+
+export interface DashboardSummary {
+  headcount: { total: number; on_target: number; below_target: number; unsatisfactory: number; no_data: number }
+  trend: { on_target_delta: number; below_target_delta: number; direction: 'up' | 'down' | 'flat' }
+  bonus_liability: number
+  alerts: DashboardAlert[]
+  quarter: number
+  year: number
+}

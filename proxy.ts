@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifySession } from '@/lib/session'
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow login page and auth API
   if (pathname.startsWith('/login') || pathname.startsWith('/api/auth')) {
     return NextResponse.next()
   }
 
-  const session = request.cookies.get('dashboard_session')
-  if (!session || session.value !== process.env.DASHBOARD_PASSWORD) {
+  const token = request.cookies.get('dashboard_session')?.value
+  const session = token ? await verifySession(token) : null
+
+  if (!session) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

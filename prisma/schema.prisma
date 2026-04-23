@@ -58,3 +58,158 @@ model POSTransaction {
   @@index([card_number])
   @@map("pos_transactions")
 }
+
+model User {
+  id                Int       @id @default(autoincrement())
+  username          String    @unique
+  password_hash     String
+  display_name      String
+  role              String
+  is_active         Boolean   @default(true)
+  entity            String?
+  contract_status   String?
+  contract_end_date DateTime?
+  first_name        String?
+  last_name         String?
+  email             String?   @unique
+  phone             String?
+  job_title         String?
+  start_date        DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  assigned_tasks      WorkItem[]  @relation("AssignedTo")
+  created_tasks       WorkItem[]  @relation("CreatedBy")
+  kpi_records         EmployeeKPI[]
+  notifications       Notification[]
+  pip_records         PipRecord[] @relation("PipSubject")
+  pip_records_created PipRecord[] @relation("PipCreatedBy")
+
+  @@map("users")
+}
+
+model WorkItem {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String    @default("")
+  type            String
+  status          String    @default("TODO")
+  priority        String    @default("MEDIUM")
+  entity          String    @default("BOTH")
+  escalation_note String?
+  due_date        DateTime? @db.Date
+  assigned_to_id  Int?
+  created_by_id   Int
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  assigned_to User? @relation("AssignedTo", fields: [assigned_to_id], references: [id])
+  created_by  User  @relation("CreatedBy", fields: [created_by_id], references: [id])
+
+  @@index([status])
+  @@index([assigned_to_id])
+  @@map("work_items")
+}
+
+model EmployeeKPI {
+  id      Int @id @default(autoincrement())
+  user_id Int
+  month   Int
+  year    Int
+
+  attendance_rate           Float?
+  target_attendance_rate    Float?
+  leave_days_taken          Int?
+  target_leave_days_taken   Int?
+  disciplinary_count        Int?
+  target_disciplinary_count Int?
+
+  reports_submitted_on_time     Int?
+  target_reports_submitted      Int?
+  reconciliation_accuracy       Float?
+  target_reconciliation_accuracy Float?
+  invoices_processed            Int?
+  target_invoices_processed     Int?
+
+  stock_accuracy_pct        Float?
+  target_stock_accuracy_pct Float?
+  shrinkage_losses          Int?
+  target_shrinkage_losses   Int?
+  stock_takes_completed     Int?
+  target_stock_takes_completed Int?
+
+  team_task_completion_rate  Float?
+  target_task_completion_rate Float?
+  staff_performance_score    Float?
+  target_staff_performance   Float?
+  revenue_vs_target          Float?
+  target_revenue_vs_target   Float?
+
+  overall_score        Float?
+  rating_band          String?
+  bonus_earned         Float?
+  kpi_schedule_signed  Boolean  @default(false)
+  signed_date          DateTime?
+  evidence_notes       Json?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, month, year])
+  @@map("employee_kpis")
+}
+
+model PipRecord {
+  id                  Int       @id @default(autoincrement())
+  user_id             Int
+  user                User      @relation("PipSubject",    fields: [user_id],       references: [id])
+  trigger_reason      String
+  issued_date         DateTime
+  review_date         DateTime
+  improvement_targets String
+  current_progress    String?
+  status              String    @default("ACTIVE")
+  outcome             String?
+  closed_date         DateTime?
+  created_by_id       Int
+  created_by          User      @relation("PipCreatedBy", fields: [created_by_id], references: [id])
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  @@index([user_id])
+  @@map("pip_records")
+}
+
+model Notification {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  title          String
+  message        String
+  type           String
+  read           Boolean  @default(false)
+  reference_id   Int?
+  reference_type String?
+  created_at     DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, read])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  actor_id    Int
+  action      String
+  target_id   Int
+  target_type String
+  old_values  Json?
+  new_values  Json?
+  created_at  DateTime @default(now())
+
+  @@index([target_id, target_type])
+  @@index([actor_id])
+  @@map("audit_logs")
+}

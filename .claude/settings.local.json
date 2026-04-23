@@ -13,7 +13,14 @@
       "Bash(npm run:*)",
       "Bash(xargs grep *)",
       "mcp__Claude_in_Chrome__tabs_context_mcp",
-      "Bash(npx prisma *)"
+      "Bash(npx prisma *)",
+      "Bash(node -e \"const crypto = require\\('crypto'\\); console.log\\(crypto.randomBytes\\(32\\).toString\\('base64'\\)\\)\")",
+      "Bash(npx tsx *)",
+      "Bash(npx shadcn *)",
+      "Bash(PRISMA_MIGRATE_SKIP_GENERATE=false npx prisma migrate dev --name add_employee_profile_fields --create-only)",
+      "Bash(grep -v \"^$\")",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\(p.version\\)\")"
     ]
   }
 }

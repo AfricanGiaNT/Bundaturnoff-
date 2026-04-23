@@ -10,6 +10,7 @@ import { Fuel } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,13 +23,14 @@ export default function LoginPage() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       })
       if (res.ok) {
         router.push('/')
         router.refresh()
       } else {
-        setError('Incorrect password. Please try again.')
+        const data = await res.json().catch(() => ({}))
+        setError(data.error ?? 'Invalid username or password.')
       }
     } catch {
       setError('Something went wrong. Please try again.')
@@ -48,11 +50,24 @@ export default function LoginPage() {
           </div>
           <div>
             <CardTitle className="text-2xl">Bunda Turnoff Sales</CardTitle>
-            <CardDescription className="mt-1">Enter your password to access the dashboard</CardDescription>
+            <CardDescription className="mt-1">Sign in to access the dashboard</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                required
+                autoFocus
+                autoComplete="username"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -62,7 +77,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 required
-                autoFocus
+                autoComplete="current-password"
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
